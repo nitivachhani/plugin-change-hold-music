@@ -6,6 +6,8 @@ import { FlexPlugin } from '@twilio/flex-plugin';
 import CustomTaskListContainer from './components/CustomTaskList/CustomTaskList.Container';
 import reducers, { namespace } from './states';
 
+import PluginConfig from './config';
+
 const PLUGIN_NAME = 'ChangeHoldMusicPlugin';
 
 export default class ChangeHoldMusicPlugin extends FlexPlugin {
@@ -26,26 +28,14 @@ export default class ChangeHoldMusicPlugin extends FlexPlugin {
     const options = { sortOrder: -1 };
     flex.AgentDesktopView.Panel1.Content.add(<CustomTaskListContainer key="ChangeHoldMusicPlugin-component" />, options);
 
-    flex.Actions.addListener('beforeTransferTask', async (payload, abortFunction) => {
-      const callSid = payload.task.attributes.call_sid;
-      try {
-        await this.changeHoldMusic(callSid);
-      } catch (error) {
-        console.error(error);
-      }
+    flex.Actions.addListener('beforeHoldCall', async (payload) => {
+      payload.holdMusicUrl = PluginConfig.holdMusicUrl;
+    });
+
+    flex.Actions.addListener('beforeTransferTask', async (payload) => {
+      flex.Actions.invokeAction('HoldCall', payload);
     });
   }
-
-  async changeHoldMusic(callSid) {
-    const result = await fetch(`https://functions-2408-dev.twil.io/change-hold-music`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      method: 'POST',
-      body: JSON.stringify({callSid}),
-    })
-  }
-
   /**
    * Registers the plugin reducers
    *
@@ -60,4 +50,4 @@ export default class ChangeHoldMusicPlugin extends FlexPlugin {
 
     manager.store.addReducer(namespace, reducers);
   }
-}
+};
